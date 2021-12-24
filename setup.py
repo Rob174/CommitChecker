@@ -11,4 +11,5 @@ setup(
   download_url = 'https://github.com/Rob174/CommitChecker/0.1',
   keywords = ['commit', 'ai' "git"], 
   classifiers = [],
+  install_requires=['tensorflow>=2.7.0'],
 )
