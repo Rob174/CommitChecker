@@ -9,12 +9,18 @@ class CommitChecker:
     """
     Class to check if there are any uncommitted changes and return last commit message
     The main script must be run from the root of the project
+
+    # Arguments
+        target_extensions: List of extensions to check for. Default: [".py"]
+        debug_mode: If True, will not check for uncommitted changes and will return empty commit and commit message
     """
-    def __init__(self, target_extensions:Optional[List[str]]=None):
+    def __init__(self, target_extensions:Optional[List[str]]=None,debug_mode: bool=False):
+        self.debug_mode = debug_mode
         if target_extensions is None:
             self.target_extensions = [".py"]
         else:
             self.target_extensions = target_extensions
+
         commit,commit_message = self.check()
         runs_dir = Path(".").joinpath("runs")
         self.log_dir = runs_dir.joinpath(f"{strftime('%Y%m%d-%Hh%Mmin%Ss')}_{commit}")
@@ -34,8 +40,8 @@ class CommitChecker:
         commit_message = subprocess.check_output(
             ['git', 'log', '--oneline']).decode("utf-8").strip().split("\n")[0]
         changes = subprocess.check_output(
-            ['git', 'diff', '--name-only', "--", "*.py"]).decode("ascii").split("\n")[:-1]
-        if len(changes):
+            ['git', 'diff', '--name-only', "--", *self.target_extensions]).decode("ascii").split("\n")[:-1]
+        if len(changes) and not self.debug_mode:
             changes_str = "\n".join(list(map(lambda x: '\t- ' + x, changes)))
             input(
                 f"There are {len(changes)} uncommitted python files:\n{changes_str}\n Are you sure you want to continue ?")
