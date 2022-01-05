@@ -13,7 +13,7 @@ PROGRESS_PATH = ROOT_PATH.joinpath("progress.md")
 # parser.add_argument('commit', metavar='commit', type=str, help='commit message')
 # args = parser.parse_args()
 # commit_message = args.commit
-commit_message = "+ backup internal files;w "
+commit_message = "+ commit only changes in write;w "
 if not COMMIT_ACTIONS_PATH.is_file():
     f = open(COMMIT_ACTIONS_PATH, "w")
     f.write("[]")
@@ -98,7 +98,7 @@ def get_text_summary() -> str:
     return ','.join(buffer)
 
 def write_to_progress(buffer: list, *args, **kwargs):
-    commit_current_state(buffer, *args, **kwargs)
+    commit_changes(buffer, *args, **kwargs)
     # Check with a regex if the current date is currently in the progress file
     with open(PROGRESS_PATH, "r") as f:
         content = f.read()
