@@ -13,7 +13,7 @@ PROGRESS_PATH = ROOT_PATH.joinpath("progress.md")
 # parser.add_argument('commit', metavar='commit', type=str, help='commit message')
 # args = parser.parse_args()
 # commit_message = args.commit
-commit_message = "cc ;u "
+commit_message = "+ backup internal files;w "
 if not COMMIT_ACTIONS_PATH.is_file():
     f = open(COMMIT_ACTIONS_PATH, "w")
     f.write("[]")
@@ -108,8 +108,9 @@ def write_to_progress(buffer: list, *args, **kwargs):
     # write the buffer to the progress file
     with open(PROGRESS_PATH, "a") as f:
         f.write(f"\n- [{get_commit_hash()}]({get_repo_url(get_commit_hash(short=False))}) {get_text_summary()}")
-    subprocess.check_call(["git", "add", "progress.md"])
-    subprocess.check_call(["git","commit", "-m", "Update progress.md"])
+    for internal_file in internal_files:
+        subprocess.check_call(["git", "add", internal_file])
+    subprocess.check_call(["git","commit", "-m", "Update progress files"])
 
 def commit_current_state(*args,**kwargs):
     subprocess.check_call(["git", "add", ":/*.py", ":/*.md"])
@@ -152,7 +153,7 @@ identificators = {
     "cc":{"fn":commit_changes, "commit_hidden":True},
     "u": {"fn":update_last_commit, "commit_hidden":True}
 }
-
+internal_files = ["progress.md","commits_actions.json"]
 with open(COMMIT_ACTIONS_PATH, "r") as f:
     buffer = json.load(f)
 for i in range(len(actions)):
