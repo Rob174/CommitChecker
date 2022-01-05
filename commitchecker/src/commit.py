@@ -13,7 +13,7 @@ PROGRESS_PATH = ROOT_PATH.joinpath("progress.md")
 # parser.add_argument('commit', metavar='commit', type=str, help='commit message')
 # args = parser.parse_args()
 # commit_message = args.commit
-commit_message = "+ solving bug multiple characters buffer;+ write auto commit;+ hide unecessary operations in commit current changes;+ update last commit functionnality;w ;"
+commit_message = "cc ;u "
 if not COMMIT_ACTIONS_PATH.is_file():
     f = open(COMMIT_ACTIONS_PATH, "w")
     f.write("[]")
@@ -102,7 +102,7 @@ def write_to_progress(buffer: list, *args, **kwargs):
     # Check with a regex if the current date is currently in the progress file
     with open(PROGRESS_PATH, "r") as f:
         content = f.read()
-    if not re.match(f"\n## {formatted_current_date()}", content):
+    if re.search(f"\n## {formatted_current_date()}", content) is None:
         with open(PROGRESS_PATH, "a") as f:
             f.write(f"\n## {formatted_current_date()}\n")
     # write the buffer to the progress file
@@ -124,7 +124,12 @@ def format_current_changes():
     
 def commit_changes(*args,**kwargs):
     subprocess.check_call(["git", "add", ":/*.py", ":/*.md"])
-    subprocess.check_call(["git","commit", "-m", format_current_changes()])
+    args = ["git", "commit"]
+    changes = format_current_changes()
+    if changes != '':
+        args.append("-m")
+        args.append(changes)
+    subprocess.check_call(args)
     
 def update_last_commit(*args,**kwargs):
     with open(PROGRESS_PATH) as f:
