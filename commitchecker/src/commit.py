@@ -13,7 +13,7 @@ PROGRESS_PATH = ROOT_PATH.joinpath("progress.md")
 # parser.add_argument('commit', metavar='commit', type=str, help='commit message')
 # args = parser.parse_args()
 # commit_message = args.commit
-commit_message = "+ tool to commit changes to git;+ add modification;+ delete;+ modify;+ write to progress;+ commit all python files;w ;c "
+commit_message = "+ solving bug multiple characters buffer;+ write auto commit;+ hide unecessary operations in commit current changes;+ update last commit functionnality;w ;"
 if not COMMIT_ACTIONS_PATH.is_file():
     f = open(COMMIT_ACTIONS_PATH, "w")
     f.write("[]")
@@ -78,21 +78,27 @@ def get_commit_hash(short: bool = True):
         args = [arg for arg in args if "short" not in arg]
     return subprocess.check_output(args).decode("utf-8").strip()
 
-def get_repo_url(long_commit_hash: Optional[str] = None) -> str:
+def path_url_main_repo():
     args = ["git", "config", "--get", "remote.origin.url"]
     root_path = re.match("^(.*).git",subprocess.check_output(args).decode("utf-8").strip())
     if root_path is not None:
         root_path = root_path.group(1)
     else:
         raise Exception("Could not get root path of git repo: are you at the root of the repo?")
+    return root_path
+
+def get_repo_url(long_commit_hash: Optional[str] = None) -> str:
+    root_path = path_url_main_repo()
     if long_commit_hash is not None:
         root_path = f"{root_path}/tree/{long_commit_hash}"
     return root_path
+    
 
 def get_text_summary() -> str:
     return ','.join(buffer)
 
 def write_to_progress(buffer: list, *args, **kwargs):
+    commit_current_state(buffer, *args, **kwargs)
     # Check with a regex if the current date is currently in the progress file
     with open(PROGRESS_PATH, "r") as f:
         content = f.read()
@@ -102,30 +108,55 @@ def write_to_progress(buffer: list, *args, **kwargs):
     # write the buffer to the progress file
     with open(PROGRESS_PATH, "a") as f:
         f.write(f"\n- [{get_commit_hash()}]({get_repo_url(get_commit_hash(short=False))}) {get_text_summary()}")
+    subprocess.check_call(["git", "add", "progress.md"])
+    subprocess.check_call(["git","commit", "-m", "Update progress.md"])
 
 def commit_current_state(*args,**kwargs):
-    subprocess.check_call(["git", "add", ":/*.py"])
+    subprocess.check_call(["git", "add", ":/*.py", ":/*.md"])
     subprocess.check_call(["git","commit", "-m", get_text_summary()])
+    
+def format_current_changes():
+    visible_modifications = [m for m,dico_m in identificators.items() if not dico_m["commit_hidden"]]
+    for to_escape in ["+"]:
+        visible_modifications = [m.replace(to_escape, "\\"+to_escape) for m in visible_modifications]
+    commit_message_splited = [c for c in commit_message.split(";") if re.match(f"^{'|'.join(visible_modifications)} ",c)]
+    return ";".join(commit_message_splited)
+    
+def commit_changes(*args,**kwargs):
+    subprocess.check_call(["git", "add", ":/*.py", ":/*.md"])
+    subprocess.check_call(["git","commit", "-m", format_current_changes()])
+    
+def update_last_commit(*args,**kwargs):
+    with open(PROGRESS_PATH) as f:
+        content = f.readlines()
+    last_line = content[-1]
+    # 32 = len("[short_commit_hash](https://github.com/) + 3* "/" (1 for pseudo/repo, 1 for repo/tree, 1 for the end)
+    last_line = re.sub(f"- [^)]{32,}(.*)", f"- [{get_commit_hash()}]({get_repo_url(get_commit_hash(short=False))}) \\2", last_line)
+    content[-1] = last_line
+    with open(PROGRESS_PATH,"w") as f:
+        f.writelines(content)
 # process commit message
 # get splited actions separated by ';' in a list
 actions = commit_message.split(';')
 identificators = {
-    "-": parse_delete,
-    "+": parse_add,
-    "m": parse_modify,
-    "w": write_to_progress,
-    "c": commit_current_state
+    "-": {"fn":parse_delete, "commit_hidden":False},
+    "+": {"fn":parse_add, "commit_hidden":False},
+    "m": {"fn":parse_modify, "commit_hidden":False},
+    "w": {"fn":write_to_progress, "commit_hidden":True},
+    "c": {"fn":commit_current_state, "commit_hidden":True},
+    "cc":{"fn":commit_changes, "commit_hidden":True},
+    "u": {"fn":update_last_commit, "commit_hidden":True}
 }
+
 with open(COMMIT_ACTIONS_PATH, "r") as f:
     buffer = json.load(f)
 for i in range(len(actions)):
     action = actions[i]
     dico_action = {}
-    match = re.match(f"(^[{''.join(identificators)}])( )(.*)", action)
-    if match:
-        for identifier, fun_parser in identificators.items():
-            if match.group(1) == identifier:
-                fun_parser(string=match.group(3), buffer=buffer)
+    match = action.split()[0]
+    remaining = action[len(match):]
+    if match in identificators:
+        identificators[match]["fn"](remaining, buffer)
     else:
         raise ValueError("Invalid commit message")
 
