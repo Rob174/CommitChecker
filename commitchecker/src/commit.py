@@ -13,7 +13,7 @@ PROGRESS_PATH = ROOT_PATH.joinpath("progress.md")
 # parser.add_argument('commit', metavar='commit', type=str, help='commit message')
 # args = parser.parse_args()
 # commit_message = args.commit
-commit_message = "+ deleting get_text_summary non formatted buffer;w "
+commit_message = "+ save internal files at the end;w "
 if not COMMIT_ACTIONS_PATH.is_file():
     f = open(COMMIT_ACTIONS_PATH, "w")
     f.write("[]")
@@ -62,6 +62,10 @@ def parse_modify(string: str, buffer: list, *args, **kwargs):
     else:
         print(f"WARNING: Could not parse modify action {string}")
 
+def save_internals():
+    for internal_file in internal_files:
+        subprocess.check_call(["git", "add", internal_file])
+    subprocess.check_call(["git","commit", "-m", "Update progress files"])
 
 def show_buffer():
     for i, e in enumerate(buffer):
@@ -104,9 +108,6 @@ def write_to_progress(buffer: list, *args, **kwargs):
     # write the buffer to the progress file
     with open(PROGRESS_PATH, "a") as f:
         f.write(f"\n- [{get_commit_hash()}]({get_repo_url(get_commit_hash(short=False))}) {format_current_changes()}")
-    for internal_file in internal_files:
-        subprocess.check_call(["git", "add", internal_file])
-    subprocess.check_call(["git","commit", "-m", "Update progress files"])
 
 def commit_current_state(*args,**kwargs):
     subprocess.check_call(["git", "add", ":/*.py", ":/*.md"])
@@ -164,3 +165,5 @@ for i in range(len(actions)):
 
 with open(COMMIT_ACTIONS_PATH, "w") as f:
     json.dump(buffer, f)
+
+save_internals()
