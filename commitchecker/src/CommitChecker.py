@@ -29,7 +29,7 @@ class CommitChecker:
             os.mkdir(str(runs_dir))
         # Add commit hash to the tr,valid logs
         for folder in ["train", "validation"]:
-            file_writer = tf.summary.create_file_writer(str(self.log_dir.joinpath(folder)))
+            file_writer = tf.summary.create_file_writer(str(self.log_dir.joinpath(folder)),filename_suffix="description")
             with file_writer.as_default():
                 tf.summary.text("Description commit", commit_message, step=0)
                 file_writer.flush()
