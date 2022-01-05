@@ -13,7 +13,7 @@ PROGRESS_PATH = ROOT_PATH.joinpath("progress.md")
 # parser.add_argument('commit', metavar='commit', type=str, help='commit message')
 # args = parser.parse_args()
 # commit_message = args.commit
-commit_message = "+ commit only changes in write;w "
+commit_message = "+ deleting get_text_summary non formatted buffer;w "
 if not COMMIT_ACTIONS_PATH.is_file():
     f = open(COMMIT_ACTIONS_PATH, "w")
     f.write("[]")
@@ -92,10 +92,6 @@ def get_repo_url(long_commit_hash: Optional[str] = None) -> str:
     if long_commit_hash is not None:
         root_path = f"{root_path}/tree/{long_commit_hash}"
     return root_path
-    
-
-def get_text_summary() -> str:
-    return ','.join(buffer)
 
 def write_to_progress(buffer: list, *args, **kwargs):
     commit_changes(buffer, *args, **kwargs)
@@ -107,14 +103,14 @@ def write_to_progress(buffer: list, *args, **kwargs):
             f.write(f"\n## {formatted_current_date()}\n")
     # write the buffer to the progress file
     with open(PROGRESS_PATH, "a") as f:
-        f.write(f"\n- [{get_commit_hash()}]({get_repo_url(get_commit_hash(short=False))}) {get_text_summary()}")
+        f.write(f"\n- [{get_commit_hash()}]({get_repo_url(get_commit_hash(short=False))}) {format_current_changes()}")
     for internal_file in internal_files:
         subprocess.check_call(["git", "add", internal_file])
     subprocess.check_call(["git","commit", "-m", "Update progress files"])
 
 def commit_current_state(*args,**kwargs):
     subprocess.check_call(["git", "add", ":/*.py", ":/*.md"])
-    subprocess.check_call(["git","commit", "-m", get_text_summary()])
+    subprocess.check_call(["git","commit", "-m", format_current_changes()])
     
 def format_current_changes():
     visible_modifications = [m for m,dico_m in identificators.items() if not dico_m["commit_hidden"]]
